@@ -47,7 +47,8 @@
         .news-content { padding: 1rem; flex: 1; display: flex; flex-direction: column; }
         .news-category { display: inline-block; background: var(--primary); color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; width: fit-content; }
         .news-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; line-height: 1.4; color: var(--text); }
-        .news-title a { color: inherit; text-decoration: none; }        .news-title a:hover { color: var(--primary); }
+        .news-title a { color: inherit; text-decoration: none; }
+        .news-title a:hover { color: var(--primary); }
         .news-desc { font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         .news-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-light); }
         
@@ -96,7 +97,7 @@
         .btn-delete:hover { background: #d32f2f; }
         .btn-test { background: var(--warning); color: white; }
         .btn-test:hover { background: #f57c00; }
-                .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem; }
         .btn-primary:hover { background: #a01830; }
         
         .alert { padding: 1rem; border-radius: 8px; margin: 1rem 0; }
@@ -123,6 +124,11 @@
             .news-grid { grid-template-columns: 1fr; }
             .nav-container { justify-content: flex-start; }
             .section-title { flex-direction: column; align-items: flex-start; }
+            
+            /* Fixed Mobile UI for API Settings */
+            .api-input-group { flex-wrap: wrap; }
+            .api-input { flex: 1 1 100%; margin-bottom: 5px; }
+            .btn-small { flex: 1; text-align: center; padding: 8px 4px; }
         }
     </style>
 </head>
@@ -145,7 +151,8 @@
     <div class="breaking-news">
         <div class="ticker-wrap" id="breakingTicker">
             <span class="ticker-item">🔴 ब्रेकिंग: असली और verified न्यूज़ लोड हो रही है...</span>
-        </div>    </div>
+        </div>    
+    </div>
 
     <nav>
         <div class="nav-container">
@@ -194,7 +201,8 @@
             </div>
             
             <div class="alert alert-info">
-                💡 <strong>Tip:</strong> एक से ज़्यादा API keys डालें ताकि अगर एक fail हो तो दूसरी काम करे            </div>
+                💡 <strong>Tip:</strong> एक से ज़्यादा API keys डालें ताकि अगर एक fail हो तो दूसरी काम करे            
+            </div>
             
             <div class="api-section">
                 <div class="api-header">
@@ -243,7 +251,7 @@
                     <button class="btn-small btn-test" onclick="testApiKey('newsapi')">🧪 Test</button>
                 </div>
             </div>
-                        <div class="api-section">
+            <div class="api-section">
                 <div class="api-header">
                     <span class="api-name">🔹 TheNewsAPI</span>
                     <span class="api-status inactive" id="status-thenewsapi">Inactive</span>
@@ -292,7 +300,8 @@
         let currentScriptData = [];
         let isSettingsOpen = false;
 
-        // Initialize        document.addEventListener('DOMContentLoaded', () => {
+        // Initialize 
+        document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Initializing News App...');
             loadTheme();
             loadApiKeys();
@@ -341,7 +350,8 @@
                         console.log(`✅ Loaded key for ${provider}`);
                     } else {
                         inputEl.value = '';
-                    }                }
+                    }                
+                }
             });
         }
 
@@ -390,7 +400,8 @@
                 testUrl = `${api.baseUrl}/search?q=india&${api.keyParam}=${key}&limit=1&lang=hi&t=${Date.now()}`;
             } else if (provider === 'currents') {
                 testUrl = `${api.baseUrl}/latest-news?apiKey=${key}&language=hi&size=1&t=${Date.now()}`;
-            } else if (provider === 'newsapi') {                testUrl = `${api.baseUrl}/top-headlines?country=in&${api.keyParam}=${key}&pageSize=1&t=${Date.now()}`;
+            } else if (provider === 'newsapi') {                
+                testUrl = `${api.baseUrl}/top-headlines?country=in&${api.keyParam}=${key}&pageSize=1&t=${Date.now()}`;
             } else if (provider === 'thenewsapi') {
                 testUrl = `${api.baseUrl}?${api.keyParam}=${key}&locale=hi-in&limit=1&t=${Date.now()}`;
             }
@@ -439,7 +450,8 @@
             });
         }
 
-        // Upload Timer        function startUploadTimer() {
+        // Upload Timer
+        function startUploadTimer() {
             timeRemaining = CONFIG.AUTO_UPDATE_INTERVAL;
             updateTimerDisplay();
             if (uploadCountdown) clearInterval(uploadCountdown);
@@ -488,6 +500,7 @@
             const modal = document.getElementById('settingsModal');
             if (event.target === modal) closeSettings();
         }
+
         function showStatus(message, type = 'info') {
             const container = document.getElementById('statusMessage');
             if (!container) return;
@@ -586,7 +599,8 @@
             const today = new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
             return [
                 { title: "भारत निर्वाचन आयोग ने चुनाव प्रक्रिया में पारदर्शिता के लिए जारी किए नए दिशानिर्देश", description: `आज ${today} की टॉप खबरें। भारत निर्वाचन आयोग ने आगामी चुनावों को देखते हुए मतदान प्रक्रिया में तकनीकी पारदर्शिता बढ़ाने के लिए नए निर्देश जारी किए हैं। इसके तहत सभी मतदान केंद्रों पर रियल-टाइम बायोमेट्रिक वेरिफिकेशन की व्यवस्था अनिवार्य की जा रही है। आयोग ने राजनीतिक दलों को सोशल मीडिया विज्ञापनों का पूरा ब्यौरा सार्वजनिक करने का भी आदेश दिया है।`, url: "#", image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400", source: { name: "निर्वाचन आयोग" }, publishedAt: new Date().toISOString() },
-                { title: "केंद्र सरकार ने किसानों के लिए 'कृषि मित्र' डिजिटल योजना का किया शुभारंभ", description: `केंद्र सरकार ने किसानों की आय बढ़ाने और उन्हें आधुनिक तकनीक से जोड़ने के लिए 'कृषि मित्र' नामक डिजिटल पोर्टल शुरू किया है। इस पोर्टल के जरिए किसानों को मौसम की सटीक भविष्यवाणी और मिट्टी की जांच की रिपोर्ट सीधे मोबाइल पर मिलेगी। सरकार ने खाद और बीज पर सब्सिडी की प्रक्रिया को पेपरलेस बना दिया है।`, url: "#", image: "https://images.unsplash.com/photo-1625246333195-781a9049385e?w=400", source: { name: "PIB" }, publishedAt: new Date().toISOString() },                { title: "ISRO ने सफलतापूर्वक लॉन्च किया नया कम्युनिकेशन सैटेलाइट", description: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO) ने आज श्रीहरिकोटा से नया कम्युनिकेशन सैटेलाइट सफलतापूर्वक लॉन्च किया है। यह सैटेलाइट दूरदराज के इलाकों में हाई-स्पीड इंटरनेट सेवा प्रदान करेगा। लॉन्च के 18 मिनट बाद सैटेलाइट ने अपनी कक्षा में प्रवेश कर लिया है।", url: "#", image: "https://images.unsplash.com/photo-1517976487492-5750f3195933?w=400", source: { name: "ISRO" }, publishedAt: new Date().toISOString() },
+                { title: "केंद्र सरकार ने किसानों के लिए 'कृषि मित्र' डिजिटल योजना का किया शुभारंभ", description: `केंद्र सरकार ने किसानों की आय बढ़ाने और उन्हें आधुनिक तकनीक से जोड़ने के लिए 'कृषि मित्र' नामक डिजिटल पोर्टल शुरू किया है। इस पोर्टल के जरिए किसानों को मौसम की सटीक भविष्यवाणी और मिट्टी की जांच की रिपोर्ट सीधे मोबाइल पर मिलेगी। सरकार ने खाद और बीज पर सब्सिडी की प्रक्रिया को पेपरलेस बना दिया है।`, url: "#", image: "https://images.unsplash.com/photo-1625246333195-781a9049385e?w=400", source: { name: "PIB" }, publishedAt: new Date().toISOString() },                
+                { title: "ISRO ने सफलतापूर्वक लॉन्च किया नया कम्युनिकेशन सैटेलाइट", description: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO) ने आज श्रीहरिकोटा से नया कम्युनिकेशन सैटेलाइट सफलतापूर्वक लॉन्च किया है। यह सैटेलाइट दूरदराज के इलाकों में हाई-स्पीड इंटरनेट सेवा प्रदान करेगा। लॉन्च के 18 मिनट बाद सैटेलाइट ने अपनी कक्षा में प्रवेश कर लिया है।", url: "#", image: "https://images.unsplash.com/photo-1517976487492-5750f3195933?w=400", source: { name: "ISRO" }, publishedAt: new Date().toISOString() },
                 { title: "नई शिक्षा नीति: स्कूलों में कोडिंग अब कक्षा 6 से होगी अनिवार्य", description: "केंद्र सरकार की नई शिक्षा नीति के तहत देश के सभी स्कूलों में कक्षा 6 से कोडिंग और कंप्यूटर साइंस को अनिवार्य विषय बनाया जाएगा। शिक्षा मंत्रालय ने कहा है कि अगले शैक्षणिक सत्र से पायलट प्रोजेक्ट शुरू किया जाएगा। शिक्षकों के लिए विशेष ट्रेनिंग प्रोग्राम चलाए जाएंगे।", url: "#", image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400", source: { name: "शिक्षा मंत्रालय" }, publishedAt: new Date().toISOString() },
                 { title: "भारत-जापान के बीच रणनीतिक साझेदारी को मिला नया आयाम", description: "प्रधानमंत्री और जापान के प्रधानमंत्री के बीच हुई वार्ता में दोनों देशों ने रक्षा, तकनीक और हरित ऊर्जा में सहयोग बढ़ाने पर सहमति जताई है। जापान भारत में सेमीकंडंडर मैन्युफैक्चरिंग में निवेश करेगा। दोनों नेताओं ने स्टार्टअप्स के लिए संयुक्त फंड बनाने की घोषणा की।", url: "#", image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400", source: { name: "MEA" }, publishedAt: new Date().toISOString() }
             ];
@@ -635,7 +649,8 @@
             if (grid) grid.classList.add('hidden');
             if (scriptContainer) {
                 scriptContainer.classList.remove('hidden');
-                scriptContainer.innerHTML = '';            }
+                scriptContainer.innerHTML = '';            
+            }
             if (copyAllBtn) copyAllBtn.classList.remove('hidden');
             
             if (!articles || articles.length === 0) {
@@ -684,7 +699,8 @@
             } catch (err) {
                 const textarea = document.createElement('textarea');
                 textarea.value = textToCopy; document.body.appendChild(textarea); textarea.select();
-                document.execCommand('copy'); document.body.removeChild(textarea);                const originalText = btn.innerHTML;
+                document.execCommand('copy'); document.body.removeChild(textarea);                
+                const originalText = btn.innerHTML;
                 btn.innerHTML = '✅ कॉपी हो गया!'; btn.classList.add('copied');
                 setTimeout(() => { btn.innerHTML = originalText; btn.classList.remove('copied'); }, 2000);
             }
@@ -734,6 +750,7 @@
             if (!text) return 'कोई विवरण उपलब्ध नहीं';
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         }
+
         function updateTicker(articles) {
             const ticker = document.getElementById('breakingTicker');
             if (articles && articles.length > 0) {
@@ -782,7 +799,8 @@
                 if (articles.length === 0) {
                     throw new Error('API से कोई आर्टिकल नहीं मिले');
                 }
-                if (isScriptView) renderScriptFormat(articles);                else renderNews(articles);
+                if (isScriptView) renderScriptFormat(articles);                
+                else renderNews(articles);
                 updateTicker(articles);
                 showStatus(`✅ ${articles.length} नई न्यूज़ load हुईं`, 'success');
             } catch (error) {
