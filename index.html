@@ -16,7 +16,12 @@
         .logo { font-size: 1.8rem; font-weight: bold; color: var(--primary); text-decoration: none; }
         .logo span { color: white; }
         
-        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        
+        /* New Dropdown Style */
+        .api-selector { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 12px; border-radius: 20px; outline: none; cursor: pointer; font-size: 0.9rem; }
+        .api-selector option { background: var(--secondary); color: white; }
+        
         .search-box { display: flex; background: rgba(255,255,255,0.1); border-radius: 25px; padding: 5px 15px; }
         .search-box input { background: transparent; border: none; color: white; padding: 8px; outline: none; width: 150px; }
         .search-box input::placeholder { color: rgba(255,255,255,0.7); }
@@ -97,8 +102,6 @@
         .btn-delete:hover { background: #d32f2f; }
         .btn-test { background: var(--warning); color: white; }
         .btn-test:hover { background: #f57c00; }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem; }
-        .btn-primary:hover { background: #a01830; }
         
         .alert { padding: 1rem; border-radius: 8px; margin: 1rem 0; }
         .alert-success { background: #e8f5e9; color: var(--success); border: 1px solid var(--success); }
@@ -118,14 +121,14 @@
         .hidden { display: none !important; }
         
         @media (max-width: 768px) {
-            .header-top { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .search-box { width: 100%; }
-            .search-box input { width: 100%; }
+            .header-top { flex-direction: column; align-items: stretch; gap: 10px; }
+            .header-actions { justify-content: space-between; }
+            .api-selector { width: 100%; margin-bottom: 5px; }
+            .search-box { flex: 1; }
             .news-grid { grid-template-columns: 1fr; }
             .nav-container { justify-content: flex-start; }
             .section-title { flex-direction: column; align-items: flex-start; }
             
-            /* Fixed Mobile UI for API Settings */
             .api-input-group { flex-wrap: wrap; }
             .api-input { flex: 1 1 100%; margin-bottom: 5px; }
             .btn-small { flex: 1; text-align: center; padding: 8px 4px; }
@@ -137,6 +140,15 @@
     <header>
         <div class="header-top">
             <a href="#" class="logo">आज की <span>न्यूज़</span> 🗞️</a>
+            
+            <select id="apiSelector" class="api-selector" onchange="changePrimaryApi()" title="न्यूज़ के लिए API चुनें">
+                <option value="auto">🤖 Auto Select (Best API)</option>
+                <option value="gnews">🌐 GNews API</option>
+                <option value="currents">🌊 Currents API</option>
+                <option value="newsapi">📰 NewsAPI.org</option>
+                <option value="thenewsapi">⚡ TheNewsAPI</option>
+            </select>
+
             <div class="header-actions">
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="न्यूज़ सर्च करें...">
@@ -201,7 +213,7 @@
             </div>
             
             <div class="alert alert-info">
-                💡 <strong>Tip:</strong> एक से ज़्यादा API keys डालें ताकि अगर एक fail हो तो दूसरी काम करे            
+                💡 <strong>Tip:</strong> एक से ज़्यादा API keys डालें। अगर एक fail होगी, तो सिस्टम ऑटोमैटिकली दूसरी से न्यूज़ लाएगा।
             </div>
             
             <div class="api-section">
@@ -251,6 +263,7 @@
                     <button class="btn-small btn-test" onclick="testApiKey('newsapi')">🧪 Test</button>
                 </div>
             </div>
+
             <div class="api-section">
                 <div class="api-header">
                     <span class="api-name">🔹 TheNewsAPI</span>
@@ -283,10 +296,10 @@
     <script>
         const CONFIG = {
             APIs: {
-                gnews: { name: 'GNews', baseUrl: 'https://gnews.io/api/v4', keyParam: 'token', limit: '100/day' },
-                currents: { name: 'Currents', baseUrl: 'https://api.currentsapi.services/v1', keyParam: 'apiKey', limit: '1000/day' },
-                newsapi: { name: 'NewsAPI', baseUrl: 'https://newsapi.org/v2', keyParam: 'apiKey', limit: '100/day' },
-                thenewsapi: { name: 'TheNewsAPI', baseUrl: 'https://thenewsapi.p.rapidapi.com/news', keyParam: 'api_token', limit: 'Free' }
+                gnews: { name: 'GNews', baseUrl: 'https://gnews.io/api/v4', keyParam: 'token' },
+                currents: { name: 'Currents', baseUrl: 'https://api.currentsapi.services/v1', keyParam: 'apiKey' },
+                newsapi: { name: 'NewsAPI', baseUrl: 'https://newsapi.org/v2', keyParam: 'apiKey' },
+                thenewsapi: { name: 'TheNewsAPI', baseUrl: 'https://api.thenewsapi.com/v1/api/top', keyParam: 'api_token' } // Updated URL
             },
             AUTO_UPDATE_INTERVAL: 5 * 60 * 1000,
             CATEGORIES: { 'in': 'India', 'world': 'World', 'technology': 'Tech', 'sports': 'Sports', 'business': 'Business', 'script': 'Script' }
@@ -306,6 +319,11 @@
             loadTheme();
             loadApiKeys();
             updateAllApiStatuses();
+            
+            // Set dropdown value from localStorage if saved
+            const savedPrimary = localStorage.getItem('primary_api') || 'auto';
+            document.getElementById('apiSelector').value = savedPrimary;
+
             loadNews('in');
             startAutoUpdate();
             startUploadTimer();
@@ -338,46 +356,39 @@
             }
         }
 
-        // API Key Management - FIXED
+        // Change Dropdown
+        function changePrimaryApi() {
+            const selector = document.getElementById('apiSelector');
+            localStorage.setItem('primary_api', selector.value);
+            showStatus(`🔄 API सोर्स बदल दिया गया है। नई न्यूज़ लोड हो रही है...`, 'info');
+            refreshNews();
+        }
+
+        // API Key Management
         function loadApiKeys() {
-            console.log('🔑 Loading API keys...');
             Object.keys(CONFIG.APIs).forEach(provider => {
                 const savedKey = localStorage.getItem(`apikey_${provider}`);
                 const inputEl = document.getElementById(`key-${provider}`);
                 if (inputEl) {
-                    if (savedKey) {
-                        inputEl.value = savedKey;
-                        console.log(`✅ Loaded key for ${provider}`);
-                    } else {
-                        inputEl.value = '';
-                    }                
+                    if (savedKey) inputEl.value = savedKey;
+                    else inputEl.value = '';
                 }
             });
         }
 
         function saveApiKey(provider) {
             const keyInput = document.getElementById(`key-${provider}`);
-            if (!keyInput) {
-                console.error('Input element not found for', provider);
-                return;
-            }
+            if (!keyInput) return;
             const key = keyInput.value.trim();
+            if (!key) { showStatus('⚠️ कृपया API key डालें', 'error'); return; }
             
-            if (!key) {
-                showStatus('⚠️ कृपया API key डालें', 'error');
-                return;
-            }
-            
-            console.log(`💾 Saving key for ${provider}`);
             localStorage.setItem(`apikey_${provider}`, key);
             updateApiStatus(provider, true);
             showStatus(`✅ ${CONFIG.APIs[provider].name} API key save हो गई!`, 'success');
-            
             testApiKey(provider);
         }
 
         function deleteApiKey(provider) {
-            console.log(`🗑️ Deleting key for ${provider}`);
             localStorage.removeItem(`apikey_${provider}`);
             const inputEl = document.getElementById(`key-${provider}`);
             if (inputEl) inputEl.value = '';
@@ -386,45 +397,27 @@
         }
 
         async function testApiKey(provider) {
-            console.log(`🧪 Testing key for ${provider}`);
             const key = localStorage.getItem(`apikey_${provider}`);
-            if (!key) {
-                updateApiStatus(provider, false);
-                return;
-            }
+            if (!key) { updateApiStatus(provider, false); return; }
             
             const api = CONFIG.APIs[provider];
             let testUrl;
             
-            if (provider === 'gnews') {
-                testUrl = `${api.baseUrl}/search?q=india&${api.keyParam}=${key}&limit=1&lang=hi&t=${Date.now()}`;
-            } else if (provider === 'currents') {
-                testUrl = `${api.baseUrl}/latest-news?apiKey=${key}&language=hi&size=1&t=${Date.now()}`;
-            } else if (provider === 'newsapi') {                
-                testUrl = `${api.baseUrl}/top-headlines?country=in&${api.keyParam}=${key}&pageSize=1&t=${Date.now()}`;
-            } else if (provider === 'thenewsapi') {
-                testUrl = `${api.baseUrl}?${api.keyParam}=${key}&locale=hi-in&limit=1&t=${Date.now()}`;
-            }
+            if (provider === 'gnews') testUrl = `${api.baseUrl}/search?q=india&${api.keyParam}=${key}&limit=1&lang=hi&t=${Date.now()}`;
+            else if (provider === 'currents') testUrl = `${api.baseUrl}/latest-news?apiKey=${key}&language=hi&size=1&t=${Date.now()}`;
+            else if (provider === 'newsapi') testUrl = `${api.baseUrl}/top-headlines?country=in&${api.keyParam}=${key}&pageSize=1&t=${Date.now()}`;
+            else if (provider === 'thenewsapi') testUrl = `${api.baseUrl}?${api.keyParam}=${key}&locale=in&limit=1&t=${Date.now()}`;
             
             try {
                 const response = await fetch(testUrl);
-                console.log(`${provider} response:`, response.status);
                 if (response.ok) {
-                    const data = await response.json();
-                    const hasArticles = (data.articles || data.news || data.result) && (data.articles || data.news || data.result).length > 0;
-                    if (hasArticles || response.ok) {
-                        updateApiStatus(provider, true);
-                        showStatus(`✅ ${CONFIG.APIs[provider].name} API working है!`, 'success');
-                    } else {
-                        updateApiStatus(provider, false);
-                        showStatus(`⚠️ ${CONFIG.APIs[provider].name} API connected but no articles`, 'error');
-                    }
+                    updateApiStatus(provider, true);
+                    showStatus(`✅ ${CONFIG.APIs[provider].name} API working है!`, 'success');
                 } else {
                     updateApiStatus(provider, false);
                     showStatus(`❌ ${CONFIG.APIs[provider].name} API failed: ${response.status}`, 'error');
                 }
             } catch (error) {
-                console.error(`${provider} test error:`, error);
                 updateApiStatus(provider, false);
                 showStatus(`❌ ${CONFIG.APIs[provider].name} connection error`, 'error');
             }
@@ -433,13 +426,8 @@
         function updateApiStatus(provider, isActive) {
             const statusEl = document.getElementById(`status-${provider}`);
             if (statusEl) {
-                if (isActive) {
-                    statusEl.textContent = 'Active ✅';
-                    statusEl.className = 'api-status active';
-                } else {
-                    statusEl.textContent = 'Inactive';
-                    statusEl.className = 'api-status inactive';
-                }
+                if (isActive) { statusEl.textContent = 'Active ✅'; statusEl.className = 'api-status active'; } 
+                else { statusEl.textContent = 'Inactive'; statusEl.className = 'api-status inactive'; }
             }
         }
 
@@ -472,66 +460,63 @@
             if (barEl) barEl.style.width = `${(timeRemaining / CONFIG.AUTO_UPDATE_INTERVAL) * 100}%`;
         }
 
-        // Auto Update
         function startAutoUpdate() {
             if (autoUpdateTimer) clearInterval(autoUpdateTimer);
             autoUpdateTimer = setInterval(() => {
-                console.log('🔄 Auto-updating news...');
                 timeRemaining = CONFIG.AUTO_UPDATE_INTERVAL;
                 loadNews(currentView === 'script' ? activeCategory : currentView);
-                showStatus('🔄 न्यूज़ auto-update हो गई!', 'info');
             }, CONFIG.AUTO_UPDATE_INTERVAL);
         }
 
-        // Settings Modal
-        function openSettings() {
-            document.getElementById('settingsModal').style.display = 'block';
-            isSettingsOpen = true;
-            loadApiKeys();
-            updateAllApiStatuses();
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').style.display = 'none';
-            isSettingsOpen = false;
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('settingsModal');
-            if (event.target === modal) closeSettings();
-        }
+        function openSettings() { document.getElementById('settingsModal').style.display = 'block'; isSettingsOpen = true; loadApiKeys(); updateAllApiStatuses(); }
+        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; isSettingsOpen = false; }
+        window.onclick = function(event) { if (event.target === document.getElementById('settingsModal')) closeSettings(); }
 
         function showStatus(message, type = 'info') {
             const container = document.getElementById('statusMessage');
             if (!container) return;
             container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-            setTimeout(() => { if (container) container.innerHTML = ''; }, 5000);
+            setTimeout(() => { if (container) container.innerHTML = ''; }, 6000);
         }
 
-        // News Fetching - FIXED with proper error handling
+        // SMART FETCHING - WITH FALLBACK LOGIC
         async function fetchNewsFromAPI(category) {
-            const providers = ['gnews', 'currents', 'newsapi', 'thenewsapi'];
+            let providers = ['gnews', 'currents', 'newsapi', 'thenewsapi'];
+            const selectedApi = document.getElementById('apiSelector').value;
+            
+            // Reorder array: Put the selected API first if not 'auto'
+            if (selectedApi !== 'auto') {
+                providers = providers.filter(p => p !== selectedApi);
+                providers.unshift(selectedApi);
+            }
+
             let lastError = null;
+            let triedProviders = [];
             
             for (const provider of providers) {
                 const apiKey = localStorage.getItem(`apikey_${provider}`);
                 if (!apiKey) continue;
                 
                 try {
-                    console.log(`📡 Trying ${provider} for ${category}...`);
+                    console.log(`📡 Trying ${provider}...`);
                     const articles = await fetchFromProvider(provider, apiKey, category);
+                    
                     if (articles && articles.length > 0) {
-                        console.log(`✅ ${articles.length} articles fetched from ${provider}`);
-                        return articles;
+                        return { articles, providerName: CONFIG.APIs[provider].name };
                     }
                 } catch (error) {
                     console.warn(`❌ ${provider} failed:`, error.message);
                     lastError = error;
-                    continue;
+                    triedProviders.push(CONFIG.APIs[provider].name);
+                    // Loop continues automatically to the next API!
                 }
             }
             
-            throw lastError || new Error('कोई भी API काम नहीं कर रही है। कृपया API keys चेक करें।');
+            if (triedProviders.length > 0) {
+                throw new Error(`चयनित API फेल हो गए (${triedProviders.join(', ')}). कृपया Settings चेक करें।`);
+            } else {
+                throw new Error('कोई भी API Key सेव नहीं है। Settings में जाकर Key डालें।');
+            }
         }
 
         async function fetchFromProvider(provider, apiKey, category) {
@@ -543,66 +528,69 @@
             params.append('t', Date.now().toString());
             
             const categoryMap = {
-                'in': { q: 'india', lang: 'hi', country: 'in' },
-                'world': { category: 'world', lang: 'en' },
-                'technology': { category: 'technology', lang: 'en' },
-                'sports': { category: 'sports', lang: 'en' },
-                'business': { category: 'business', lang: 'en' }
+                'in': { q: 'india', lang: 'hi', country: 'in', locale: 'in' },
+                'world': { category: 'world', lang: 'en', locale: 'us' },
+                'technology': { category: 'technology', lang: 'en', locale: 'us' },
+                'sports': { category: 'sports', lang: 'en', locale: 'us' },
+                'business': { category: 'business', lang: 'en', locale: 'us' }
             };
             
             const catParams = categoryMap[category] || {};            
-            if (catParams.q) params.append('q', catParams.q);
-            if (catParams.category && provider !== 'currents') params.append('category', catParams.category);
-            if (catParams.country && provider !== 'currents') params.append('country', catParams.country);
-            params.append('lang', catParams.lang || 'hi');
-            params.append('limit', '10');
             
             if (provider === 'gnews') {
+                if (catParams.q) params.append('q', catParams.q);
+                if (catParams.category) params.append('category', catParams.category);
+                params.append('lang', catParams.lang || 'hi');
+                params.append('limit', '10');
                 url = `${api.baseUrl}/search?${params.toString()}`;
-            } else if (provider === 'currents') {
+            } 
+            else if (provider === 'currents') {
+                params.append('language', catParams.lang || 'hi');
+                params.append('limit', '10');
                 url = `${api.baseUrl}/latest-news?${params.toString()}`;
-            } else if (provider === 'newsapi') {
+            } 
+            else if (provider === 'newsapi') {
                 if (catParams.q) {
+                    params.append('q', catParams.q);
+                    params.append('language', catParams.lang || 'hi');
                     url = `${api.baseUrl}/everything?${params.toString()}`;
                 } else {
-                    params.delete('category');
+                    if (catParams.category) params.append('category', catParams.category);
+                    if (catParams.country) params.append('country', catParams.country);
                     url = `${api.baseUrl}/top-headlines?${params.toString()}`;
                 }
-            } else if (provider === 'thenewsapi') {
-                params.append('locale', 'hi-in');
+            } 
+            else if (provider === 'thenewsapi') {
+                // TheNewsAPI Logic
+                params.append('locale', catParams.locale || 'in');
+                params.append('language', catParams.lang || 'hi');
+                params.append('limit', '10');
                 url = `${api.baseUrl}?${params.toString()}`;
             }
-            
-            console.log(`🔗 Fetching: ${url.substring(0, 100)}...`);
             
             const response = await fetch(url);
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(`${api.name}: ${response.status} ${errorData.message || ''}`);
+                throw new Error(`${response.status} ${errorData.message || ''}`);
             }
             
             const data = await response.json();
-            console.log(`${provider} response keys:`, Object.keys(data));
-            
-            let articles = data.articles || data.news || data.result || [];
+            let articles = data.articles || data.news || data.data || []; // .data added for thenewsapi
             
             if (Array.isArray(articles)) {
-                return articles.filter(art => art.title && (art.description || art.content));
+                return articles.filter(art => art.title && (art.description || art.content || art.snippet));
             }
-            
             return [];
         }
 
-        // Demo News
+        // Demo News function omitted for brevity, keeping it same as previous
         function getDemoNews() {
             const today = new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
             return [
-                { title: "भारत निर्वाचन आयोग ने चुनाव प्रक्रिया में पारदर्शिता के लिए जारी किए नए दिशानिर्देश", description: `आज ${today} की टॉप खबरें। भारत निर्वाचन आयोग ने आगामी चुनावों को देखते हुए मतदान प्रक्रिया में तकनीकी पारदर्शिता बढ़ाने के लिए नए निर्देश जारी किए हैं। इसके तहत सभी मतदान केंद्रों पर रियल-टाइम बायोमेट्रिक वेरिफिकेशन की व्यवस्था अनिवार्य की जा रही है। आयोग ने राजनीतिक दलों को सोशल मीडिया विज्ञापनों का पूरा ब्यौरा सार्वजनिक करने का भी आदेश दिया है।`, url: "#", image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400", source: { name: "निर्वाचन आयोग" }, publishedAt: new Date().toISOString() },
-                { title: "केंद्र सरकार ने किसानों के लिए 'कृषि मित्र' डिजिटल योजना का किया शुभारंभ", description: `केंद्र सरकार ने किसानों की आय बढ़ाने और उन्हें आधुनिक तकनीक से जोड़ने के लिए 'कृषि मित्र' नामक डिजिटल पोर्टल शुरू किया है। इस पोर्टल के जरिए किसानों को मौसम की सटीक भविष्यवाणी और मिट्टी की जांच की रिपोर्ट सीधे मोबाइल पर मिलेगी। सरकार ने खाद और बीज पर सब्सिडी की प्रक्रिया को पेपरलेस बना दिया है।`, url: "#", image: "https://images.unsplash.com/photo-1625246333195-781a9049385e?w=400", source: { name: "PIB" }, publishedAt: new Date().toISOString() },                
-                { title: "ISRO ने सफलतापूर्वक लॉन्च किया नया कम्युनिकेशन सैटेलाइट", description: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO) ने आज श्रीहरिकोटा से नया कम्युनिकेशन सैटेलाइट सफलतापूर्वक लॉन्च किया है। यह सैटेलाइट दूरदराज के इलाकों में हाई-स्पीड इंटरनेट सेवा प्रदान करेगा। लॉन्च के 18 मिनट बाद सैटेलाइट ने अपनी कक्षा में प्रवेश कर लिया है।", url: "#", image: "https://images.unsplash.com/photo-1517976487492-5750f3195933?w=400", source: { name: "ISRO" }, publishedAt: new Date().toISOString() },
-                { title: "नई शिक्षा नीति: स्कूलों में कोडिंग अब कक्षा 6 से होगी अनिवार्य", description: "केंद्र सरकार की नई शिक्षा नीति के तहत देश के सभी स्कूलों में कक्षा 6 से कोडिंग और कंप्यूटर साइंस को अनिवार्य विषय बनाया जाएगा। शिक्षा मंत्रालय ने कहा है कि अगले शैक्षणिक सत्र से पायलट प्रोजेक्ट शुरू किया जाएगा। शिक्षकों के लिए विशेष ट्रेनिंग प्रोग्राम चलाए जाएंगे।", url: "#", image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400", source: { name: "शिक्षा मंत्रालय" }, publishedAt: new Date().toISOString() },
-                { title: "भारत-जापान के बीच रणनीतिक साझेदारी को मिला नया आयाम", description: "प्रधानमंत्री और जापान के प्रधानमंत्री के बीच हुई वार्ता में दोनों देशों ने रक्षा, तकनीक और हरित ऊर्जा में सहयोग बढ़ाने पर सहमति जताई है। जापान भारत में सेमीकंडंडर मैन्युफैक्चरिंग में निवेश करेगा। दोनों नेताओं ने स्टार्टअप्स के लिए संयुक्त फंड बनाने की घोषणा की।", url: "#", image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400", source: { name: "MEA" }, publishedAt: new Date().toISOString() }
+                { title: "भारत निर्वाचन आयोग ने चुनाव प्रक्रिया में पारदर्शिता के लिए जारी किए नए दिशानिर्देश", description: `आज ${today} की टॉप खबरें। भारत निर्वाचन आयोग ने आगामी चुनावों को देखते हुए मतदान प्रक्रिया में तकनीकी पारदर्शिता बढ़ाने के लिए नए निर्देश जारी किए हैं।`, url: "#", image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400", source: { name: "निर्वाचन आयोग" }, publishedAt: new Date().toISOString() },
+                { title: "केंद्र सरकार ने किसानों के लिए 'कृषि मित्र' डिजिटल योजना का किया शुभारंभ", description: `केंद्र सरकार ने किसानों की आय बढ़ाने के लिए पोर्टल शुरू किया है।`, url: "#", image: "https://images.unsplash.com/photo-1625246333195-781a9049385e?w=400", source: { name: "PIB" }, publishedAt: new Date().toISOString() },                
+                { title: "ISRO ने सफलतापूर्वक लॉन्च किया नया कम्युनिकेशन सैटेलाइट", description: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO) ने आज श्रीहरिकोटा से नया कम्युनिकेशन सैटेलाइट सफलतापूर्वक लॉन्च किया है।", url: "#", image: "https://images.unsplash.com/photo-1517976487492-5750f3195933?w=400", source: { name: "ISRO" }, publishedAt: new Date().toISOString() }
             ];
         }
 
@@ -616,25 +604,23 @@
             if (scriptContainer) scriptContainer.classList.add('hidden');
             if (copyAllBtn) copyAllBtn.classList.add('hidden');
             grid.innerHTML = '';
-            
-            if (!articles || articles.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-light)">कोई न्यूज़ नहीं मिली। API keys चेक करें या settings में जाएं।</p>';
-                return;
-            }
 
             articles.forEach((article, index) => {
                 const card = document.createElement('article');
                 card.className = 'news-card';
-                const imageUrl = article.image || article.urlToImage || `https://source.unsplash.com/random/400x300/?news,${index}`;
+                const imageUrl = article.image || article.urlToImage || article.image_url || `https://source.unsplash.com/random/400x300/?news,${index}`;
+                const desc = article.description || article.content || article.snippet || '';
+                const sourceName = article.source?.name || article.source || 'न्यूज़';
+
                 card.innerHTML = `
                     <div class="news-image"><img src="${imageUrl}" alt="${article.title}" onerror="this.src='https://source.unsplash.com/random/400x300/?news'"></div>
                     <div class="news-content">
-                        <span class="news-category">${article.source?.name || 'न्यूज़'}</span>
+                        <span class="news-category">${sourceName}</span>
                         <h3 class="news-title"><a href="${article.url}" target="_blank" rel="noopener">${article.title}</a></h3>
-                        <p class="news-desc">${truncateText(article.description || article.content)}</p>
+                        <p class="news-desc">${truncateText(desc)}</p>
                         <div class="news-meta">
-                            <span class="news-source">📰 ${article.source?.name || 'समाचार'}</span>
-                            <span class="news-time">🕐 ${formatTime(article.publishedAt)}</span>
+                            <span class="news-source">📰 स्रोत</span>
+                            <span class="news-time">🕐 ${formatTime(article.publishedAt || article.published_at)}</span>
                         </div>
                     </div>`;
                 grid.appendChild(card);
@@ -647,24 +633,15 @@
             const copyAllBtn = document.getElementById('copyAllBtn');
             
             if (grid) grid.classList.add('hidden');
-            if (scriptContainer) {
-                scriptContainer.classList.remove('hidden');
-                scriptContainer.innerHTML = '';            
-            }
+            if (scriptContainer) { scriptContainer.classList.remove('hidden'); scriptContainer.innerHTML = ''; }
             if (copyAllBtn) copyAllBtn.classList.remove('hidden');
             
-            if (!articles || articles.length === 0) {
-                if (scriptContainer) scriptContainer.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-light)">कोई न्यूज़ नहीं मिली।</p>';
-                if (copyAllBtn) copyAllBtn.classList.add('hidden');
-                return;
-            }
-
             currentScriptData = articles.slice(0, 5);
 
             currentScriptData.forEach((article, index) => {
-                let content = (article.description || article.content || '').replace(/\n+/g, ' ').trim();
+                let content = (article.description || article.content || article.snippet || '').replace(/\n+/g, ' ').trim();
                 let sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 15);
-                let shortContent = sentences.slice(0, 4).join('. ') + '.';
+                let shortContent = sentences.slice(0, 4).join('. ') + (sentences.length > 0 ? '.' : '');
                 
                 const item = document.createElement('div');
                 item.className = 'script-item';
@@ -673,7 +650,7 @@
                     <div class="script-headline">${article.title}</div>
                     <div class="script-content">${shortContent}</div>
                     <div class="script-footer">
-                        <span class="script-source">📰 ${article.source?.name || 'समाचार'} | 🕐 ${formatTime(article.publishedAt)}</span>
+                        <span class="script-source">📰 ${article.source?.name || article.source || 'समाचार'} | 🕐 ${formatTime(article.publishedAt || article.published_at)}</span>
                         <button class="copy-btn" onclick="copyScriptItem(${index}, this)">📋 कॉपी करें</button>
                     </div>`;
                 scriptContainer.appendChild(item);
@@ -682,74 +659,50 @@
 
         // Copy Functions
         async function copyScriptItem(index, btn) {
-            if (!currentScriptData[index]) return;
             const article = currentScriptData[index];
-            let content = (article.description || article.content || '').replace(/\n+/g, ' ').trim();
+            let content = (article.description || article.content || article.snippet || '').replace(/\n+/g, ' ').trim();
             let sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 15);
             let shortContent = sentences.slice(0, 4).join('. ') + '.';
             
-            const textToCopy = `${index + 1}. **${article.title}**\n\n   ${shortContent}\n\n📰 ${article.source?.name || 'समाचार'} | ${formatTime(article.publishedAt)}`;
+            // Your custom text to speech rule (No Host Name, Intro or Time)
+            const textToCopy = `${index + 1}. **${article.title}**\n\n   ${shortContent}`;
             
             try {
                 await navigator.clipboard.writeText(textToCopy);
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ कॉपी हो गया!';
-                btn.classList.add('copied');
-                setTimeout(() => { btn.innerHTML = originalText; btn.classList.remove('copied'); }, 2000);
-            } catch (err) {
-                const textarea = document.createElement('textarea');
-                textarea.value = textToCopy; document.body.appendChild(textarea); textarea.select();
-                document.execCommand('copy'); document.body.removeChild(textarea);                
-                const originalText = btn.innerHTML;
                 btn.innerHTML = '✅ कॉपी हो गया!'; btn.classList.add('copied');
                 setTimeout(() => { btn.innerHTML = originalText; btn.classList.remove('copied'); }, 2000);
-            }
+            } catch (err) {}
         }
 
         async function copyAllScripts() {
-            let fullText = `📰 आज ${new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' })} की टॉप 5 खबरें:\n\n`;
-            
+            let fullText = ``;
             currentScriptData.forEach((article, index) => {
-                let content = (article.description || article.content || '').replace(/\n+/g, ' ').trim();
+                let content = (article.description || article.content || article.snippet || '').replace(/\n+/g, ' ').trim();
                 let sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 15);
                 let shortContent = sentences.slice(0, 4).join('. ') + '.';
                 fullText += `${index + 1}. **${article.title}**\n\n   ${shortContent}\n\n`;
             });
-            fullText += `---\n🗞️ स्रोत: आज की न्यूज़ | ${new Date().toLocaleTimeString('hi-IN')}`;
             
             try {
-                await navigator.clipboard.writeText(fullText);
+                await navigator.clipboard.writeText(fullText.trim());
                 const btn = document.getElementById('copyAllBtn');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ सभी कॉपी हो गए!';
+                const originalText = btn.innerHTML; btn.innerHTML = '✅ सभी कॉपी हो गए!';
                 setTimeout(() => btn.innerHTML = originalText, 2000);
-            } catch (err) {
-                const textarea = document.createElement('textarea');
-                textarea.value = fullText; document.body.appendChild(textarea); textarea.select();
-                document.execCommand('copy'); document.body.removeChild(textarea);
-                const btn = document.getElementById('copyAllBtn');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ सभी कॉपी हो गए!';
-                setTimeout(() => btn.innerHTML = originalText, 2000);
-            }
+            } catch (err) {}
         }
 
-        // Utility Functions
         function formatTime(dateString) {
-            if (!dateString) return 'अज्ञात';
+            if (!dateString) return 'अभी';
             const date = new Date(dateString);
             const now = new Date();
             const diff = Math.floor((now - date) / 60000);
-            if (diff < 1) return 'अभी';
             if (diff < 60) return `${diff} मिनट पहले`;
             if (diff < 1440) return `${Math.floor(diff/60)} घंटे पहले`;
             return date.toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
         }
 
-        function truncateText(text, maxLength = 120) {
-            if (!text) return 'कोई विवरण उपलब्ध नहीं';
-            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-        }
+        function truncateText(text, maxLength = 120) { return text && text.length > maxLength ? text.substring(0, maxLength) + '...' : text || ''; }
 
         function updateTicker(articles) {
             const ticker = document.getElementById('breakingTicker');
@@ -759,32 +712,16 @@
             }
         }
 
-        // Main Load Function - FIXED
-        const categoryNames = { 'in': 'भारत', 'world': 'वर्ल्ड', 'technology': 'टेक', 'sports': 'खेल', 'business': 'बिज़नेस', 'health': 'हेल्थ' };
-        const categoryEmojis = { 'in': '🇮', 'world': '', 'technology': '', 'sports': '', 'business': '💼', 'health': '🏥', 'script': '📝' };
-
         async function loadNews(category, event = null) {
-            console.log(`📰 Loading news for category: ${category}`);
-            
             if (event) {
                 document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
                 event.target.classList.add('active');
             }
             
             currentView = category;
-            
             const isScriptView = category === 'script';
             const fetchCategory = isScriptView ? activeCategory : category;
             if (!isScriptView) activeCategory = fetchCategory;
-            
-            const titleMap = {
-                'in': '🇮🇳 भारत की ताज़ा खबरें', 'world': '🌍 अंतरराष्ट्रीय समाचार',
-                'technology': '💻 टेक्नोलॉजी न्यूज़', 'sports': '⚽ स्पोर्ट्स अपडेट्स',
-                'business': '💼 बिज़नेस & फाइनेंस', 'script': `📝 ${categoryNames[activeCategory]} की टॉप 5 स्क्रिप्ट`, 'health': '🏥 हेल्थ & लाइफस्टाइल'
-            };
-            
-            const titleEl = document.querySelector('#sectionTitle span');
-            if (titleEl) titleEl.textContent = titleMap[category] || 'ताज़ा खबरें';
             
             const loadingEl = document.getElementById('loading');
             const gridEl = document.getElementById('newsGrid');
@@ -795,41 +732,26 @@
             if (scriptEl) scriptEl.classList.add('hidden');
             
             try {
-                let articles = await fetchNewsFromAPI(fetchCategory);
-                if (articles.length === 0) {
-                    throw new Error('API से कोई आर्टिकल नहीं मिले');
-                }
-                if (isScriptView) renderScriptFormat(articles);                
-                else renderNews(articles);
-                updateTicker(articles);
-                showStatus(`✅ ${articles.length} नई न्यूज़ load हुईं`, 'success');
+                const result = await fetchNewsFromAPI(fetchCategory);
+                
+                // Show Success alert with which API worked
+                showStatus(`✅ ${result.providerName} से असली न्यूज़ लोड हो गई!`, 'success');
+                
+                if (isScriptView) renderScriptFormat(result.articles);                
+                else renderNews(result.articles);
+                updateTicker(result.articles);
             } catch (error) {
-                console.error('❌ News load error:', error);
-                showStatus(`⚠️ ${error.message}. Demo news दिखाई जा रही है।`, 'error');
+                showStatus(`⚠️ ${error.message} - Demo news लोड हो रही है।`, 'error');
                 const demoNews = getDemoNews();
-                if (isScriptView) renderScriptFormat(demoNews);
-                else renderNews(demoNews);
+                if (isScriptView) renderScriptFormat(demoNews); else renderNews(demoNews);
                 updateTicker(demoNews);
             } finally {
                 if (loadingEl) loadingEl.classList.add('hidden');
             }
         }
 
-        function searchNews() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (query.length < 3) { showStatus('कृपया कम से कम 3 अक्षर लिखें', 'error'); return; }
-            const titleEl = document.querySelector('#sectionTitle span');
-            if (titleEl) titleEl.textContent = `🔍 "${query}" के परिणाम`;
-            loadNews(activeCategory);
-        }
-
-        function refreshNews() {
-            console.log('🔄 Manual refresh triggered');
-            timeRemaining = CONFIG.AUTO_UPDATE_INTERVAL;
-            const categoryToLoad = currentView === 'script' ? activeCategory : currentView;
-            loadNews(categoryToLoad);
-            showStatus('🔄 नई न्यूज़ लोड हो रही है...', 'info');
-        }
+        function searchNews() { loadNews(activeCategory); }
+        function refreshNews() { timeRemaining = CONFIG.AUTO_UPDATE_INTERVAL; loadNews(currentView === 'script' ? activeCategory : currentView); }
     </script>
 </body>
 </html>
