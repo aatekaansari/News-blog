@@ -286,10 +286,10 @@
     <script>
         const CONFIG = {
             APIs: {
-                gnews: { name: 'GNews', baseUrl: 'https://gnews.io/api/v4', keyParam: 'token' },
-                currents: { name: 'Currents', baseUrl: 'https://api.currentsapi.services/v1', keyParam: 'apiKey' },
-                newsapi: { name: 'NewsAPI', baseUrl: 'https://newsapi.org/v2', keyParam: 'apiKey' },
-                thenewsapi: { name: 'TheNewsAPI', baseUrl: 'https://api.thenewsapi.com/v1/news/top', keyParam: 'api_token' } // Updated URL
+                gnews: { name: 'GNews', baseUrl: 'https://gnews.io/api/v4' },
+                currents: { name: 'Currents', baseUrl: 'https://api.currentsapi.services/v1' },
+                newsapi: { name: 'NewsAPI', baseUrl: 'https://newsapi.org/v2' },
+                thenewsapi: { name: 'TheNewsAPI', baseUrl: 'https://api.thenewsapi.com/v1/news/top' }
             },
             CATEGORIES: { 'in': 'India', 'world': 'World', 'technology': 'Tech', 'sports': 'Sports', 'business': 'Business', 'script': 'Script' }
         };
@@ -388,10 +388,16 @@
             const api = CONFIG.APIs[provider];
             let testUrl;
             
-            if (provider === 'gnews') testUrl = `${api.baseUrl}/search?q=india&${api.keyParam}=${key}&limit=1&lang=hi&t=${Date.now()}`;
-            else if (provider === 'currents') testUrl = `${api.baseUrl}/latest-news?apiKey=${key}&language=hi&size=1&t=${Date.now()}`;
-            else if (provider === 'newsapi') testUrl = `${api.baseUrl}/top-headlines?country=in&${api.keyParam}=${key}&pageSize=1&t=${Date.now()}`;
-            else if (provider === 'thenewsapi') testUrl = `${api.baseUrl}?${api.keyParam}=${key}&locale=in&limit=1&t=${Date.now()}`;
+            if (provider === 'gnews') {
+                testUrl = `${api.baseUrl}/top-headlines?topic=nation&lang=hi&country=in&max=1&apikey=${key}`;
+            } else if (provider === 'currents') {
+                testUrl = `${api.baseUrl}/latest-news?language=hi&apiKey=${key}`;
+            } else if (provider === 'newsapi') {
+                let rawUrl = `${api.baseUrl}/top-headlines?country=in&pageSize=1&apiKey=${key}`;
+                testUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawUrl)}`;
+            } else if (provider === 'thenewsapi') {
+                testUrl = `${api.baseUrl}?locale=in&limit=1&api_token=${key}`;
+            }
             
             try {
                 const response = await fetch(testUrl);
@@ -434,6 +440,80 @@
             setTimeout(() => { if (container) container.innerHTML = ''; }, 6000);
         }
 
+        // FETCHING DATA FROM PROVIDERS WITH FIXES
+        async function fetchFromProvider(provider, apiKey, category) {
+            const api = CONFIG.APIs[provider];
+            let url;
+            const params = new URLSearchParams();
+
+            const categoryMap = {
+                'in': { q: 'india', lang: 'hi', country: 'in', locale: 'in', topic: 'nation' },
+                'world': { category: 'world', lang: 'hi', country: 'in', topic: 'world' },
+                'technology': { category: 'technology', lang: 'hi', country: 'in', topic: 'technology' },
+                'sports': { category: 'sports', lang: 'hi', country: 'in', topic: 'sports' },
+                'business': { category: 'business', lang: 'hi', country: 'in', topic: 'business' }
+            };
+
+            const catParams = categoryMap[category] || {};
+
+            if (provider === 'gnews') {
+                params.append('apikey', apiKey); // FIX: "apikey" param
+                if (catParams.topic) params.append('topic', catParams.topic);
+                params.append('lang', 'hi');
+                params.append('country', 'in');
+                params.append('max', '10');
+                url = `${api.baseUrl}/top-headlines?${params.toString()}`;
+            }
+            else if (provider === 'currents') {
+                params.append('apiKey', apiKey);
+                params.append('language', 'hi');
+                if (catParams.category) params.append('category', catParams.category);
+                // FIX: Removed cache-busting logic to prevent 400 Bad Request
+                url = `${api.baseUrl}/latest-news?${params.toString()}`;
+            }
+            else if (provider === 'newsapi') {
+                params.append('apiKey', apiKey);
+                if (catParams.q) {
+                    params.append('q', catParams.q);
+                    params.append('language', 'hi');
+                    url = `${api.baseUrl}/everything?${params.toString()}`;
+                } else {
+                    if (catParams.category) params.append('category', catParams.category);
+                    if (catParams.country) params.append('country', catParams.country);
+                    url = `${api.baseUrl}/top-headlines?${params.toString()}`;
+                }
+                // FIX: Proxy for NewsAPI to avoid 426 Github Pages Error
+                url = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            }
+            else if (provider === 'thenewsapi') {
+                params.append('api_token', apiKey);
+                params.append('locale', 'in');
+                params.append('language', 'hi');
+                params.append('limit', '10');
+                if (catParams.category) params.append('categories', catParams.category);
+                url = `${api.baseUrl}?${params.toString()}`;
+            }
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                let errorMsg = response.status;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || errorData.error || response.status;
+                } catch(e) {}
+                throw new Error(`${errorMsg}`);
+            }
+
+            const data = await response.json();
+            let articles = data.articles || data.news || data.data || [];
+
+            if (Array.isArray(articles)) {
+                return articles.filter(art => art.title && (art.description || art.content || art.snippet));
+            }
+            return [];
+        }
+
         // STRICT FETCHING - NO FALLBACK IF SPECIFIC API CHOSEN
         async function fetchNewsFromAPI(category, silentMode = false) {
             let providers = [];
@@ -450,7 +530,7 @@
             for (const provider of providers) {
                 const apiKey = localStorage.getItem(`apikey_${provider}`);
                 if (!apiKey) {
-                    if (selectedApi !== 'auto') throw new Error(`आपने ${CONFIG.APIs[provider].name} चुना है, लेकिन इसकी Key सेव नहीं है।`);
+                    if (selectedApi !== 'auto') throw new Error(`${CONFIG.APIs[provider].name} चुना है, लेकिन इसकी Key सेव नहीं है। Settings में जाएं।`);
                     continue;
                 }
                 
@@ -472,70 +552,6 @@
             }
             
             throw new Error(lastError ? lastError.message : 'कोई भी API Key सेव नहीं है। Settings में जाकर Key डालें।');
-        }
-
-        async function fetchFromProvider(provider, apiKey, category) {
-            const api = CONFIG.APIs[provider];
-            let url;
-            const params = new URLSearchParams();
-            
-            params.append(api.keyParam, apiKey);
-            params.append('t', Date.now().toString()); // cache busting
-            
-            const categoryMap = {
-                'in': { q: 'india', lang: 'hi', country: 'in', locale: 'in' },
-                'world': { category: 'world', lang: 'en', locale: 'us' },
-                'technology': { category: 'technology', lang: 'en', locale: 'us' },
-                'sports': { category: 'sports', lang: 'en', locale: 'us' },
-                'business': { category: 'business', lang: 'en', locale: 'us' }
-            };
-            
-            const catParams = categoryMap[category] || {};            
-            
-            if (provider === 'gnews') {
-                if (catParams.q) params.append('q', catParams.q);
-                if (catParams.category) params.append('category', catParams.category);
-                params.append('lang', catParams.lang || 'hi');
-                params.append('limit', '10');
-                url = `${api.baseUrl}/search?${params.toString()}`;
-            } 
-            else if (provider === 'currents') {
-                params.append('language', catParams.lang || 'hi');
-                params.append('limit', '10');
-                url = `${api.baseUrl}/latest-news?${params.toString()}`;
-            } 
-            else if (provider === 'newsapi') {
-                if (catParams.q) {
-                    params.append('q', catParams.q);
-                    params.append('language', catParams.lang || 'hi');
-                    url = `${api.baseUrl}/everything?${params.toString()}`;
-                } else {
-                    if (catParams.category) params.append('category', catParams.category);
-                    if (catParams.country) params.append('country', catParams.country);
-                    url = `${api.baseUrl}/top-headlines?${params.toString()}`;
-                }
-            } 
-            else if (provider === 'thenewsapi') {
-                params.append('locale', catParams.locale || 'in');
-                params.append('language', catParams.lang || 'hi');
-                params.append('limit', '10');
-                url = `${api.baseUrl}?${params.toString()}`;
-            }
-            
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`${response.status} ${errorData.message || ''}`);
-            }
-            
-            const data = await response.json();
-            let articles = data.articles || data.news || data.data || []; 
-            
-            if (Array.isArray(articles)) {
-                return articles.filter(art => art.title && (art.description || art.content || art.snippet));
-            }
-            return [];
         }
 
         // Silent Check for New News (Background)
