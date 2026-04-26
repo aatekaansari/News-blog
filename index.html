@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>आज की न्यूज़ | ऑटोमैटिक न्यूज़ पोर्टल</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root { --primary: #c41e3a; --secondary: #1a1a2e; --light: #f8f9fa; --dark: #16213e; --text: #333; --text-light: #666; --card-shadow: 0 4px 12px rgba(0,0,0,0.1); --script-bg: #fff9e6; --script-border: #ffc107; }
+        [data-theme="dark"] { --primary: #ff6b6b; --secondary: #0f0f23; --light: #1a1a2e; --dark: #0a0a15; --text: #f1f1f1; --text-light: #aaa; --card-shadow: 0 4px 12px rgba(0,0,0,0.3); --script-bg: #2a2a4a; --script-border: #ff9800; }
+        
+        body { background: var(--light); color: var(--text); transition: all 0.3s; line-height: 1.6; }
+        
+        header { background: linear-gradient(135deg, var(--secondary), var(--dark)); color: white; padding: 1rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .logo { font-size: 1.8rem; font-weight: bold; color: var(--primary); text-decoration: none; }
+        .logo span { color: white; }
+        
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .search-box { display: flex; background: rgba(255,255,255,0.1); border-radius: 25px; padding: 5px 15px; }
+        .search-box input { background: transparent; border: none; color: white; padding: 8px; outline: none; width: 150px; }
+        .search-box input::placeholder { color: rgba(255,255,255,0.7); }
+        .search-box button { background: var(--primary); border: none; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+        .search-box button:hover { background: #a01830; }
+        
+        .theme-toggle, .settings-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px 12px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; margin-left: 5px; }
+        
+        .breaking-news { background: var(--primary); color: white; padding: 8px 0; overflow: hidden; white-space: nowrap; }
+        .ticker-wrap { display: inline-block; animation: ticker 30s linear infinite; }
+        .ticker-item { display: inline-block; padding: 0 2rem; font-weight: 500; }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        
+        nav { background: var(--secondary); padding: 0.5rem 0; overflow-x: auto; white-space: nowrap; }
+        .nav-container { display: flex; gap: 5px; padding: 0 1rem; }
+        .nav-btn { background: transparent; border: 2px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
+        .nav-btn:hover, .nav-btn.active { background: var(--primary); border-color: var(--primary); }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+        .section-title { font-size: 1.5rem; margin: 1.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--primary); color: var(--text); display: flex; justify-content: space-between; align-items: center; }
+        .section-title .copy-all { font-size: 0.9rem; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .news-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: var(--card-shadow); transition: transform 0.3s; display: flex; flex-direction: column; }
+        [data-theme="dark"] .news-card { background: var(--dark); }
+        .news-card:hover { transform: translateY(-5px); }
+        
+        .news-image { width: 100%; height: 180px; object-fit: cover; background: linear-gradient(45deg, #667eea, #764ba2); }
+        .news-image img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .news-content { padding: 1rem; flex: 1; display: flex; flex-direction: column; }        .news-category { display: inline-block; background: var(--primary); color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; width: fit-content; }
+        .news-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; line-height: 1.4; color: var(--text); }
+        .news-title a { color: inherit; text-decoration: none; }
+        .news-title a:hover { color: var(--primary); }
+        .news-desc { font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .news-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-light); }
+        .news-source { font-weight: 500; }
+        .news-time { display: flex; align-items: center; gap: 4px; }
+        
+        /* ===== SCRIPT FORMAT STYLES ===== */
+        .script-container { display: flex; flex-direction: column; gap: 1.5rem; }
+        .script-item { background: var(--script-bg); border-left: 4px solid var(--script-border); border-radius: 8px; padding: 1rem 1.2rem; position: relative; }
+        .script-number { font-weight: bold; color: var(--primary); font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .script-headline { font-weight: 600; font-size: 1.05rem; color: var(--text); margin-bottom: 0.8rem; line-height: 1.4; }
+        .script-content { font-size: 0.95rem; color: var(--text); line-height: 1.7; white-space: pre-line; margin-bottom: 1rem; }
+        .script-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-light); }
+        .script-source { font-style: italic; }
+        
+        .copy-btn { background: var(--secondary); color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .copy-btn:hover { background: var(--primary); }
+        .copy-btn.copied { background: #4caf50; }
+        
+        .copy-all-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; margin-left: 10px; }
+        .copy-all-btn:hover { background: #a01830; }
+        
+        /* ===== LOADING & ERROR ===== */
+        .loading { text-align: center; padding: 3rem; color: var(--text-light); }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .error-msg { background: #ffebee; color: #c62828; padding: 1rem; border-radius: 8px; text-align: center; margin: 1rem 0; }
+        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 1rem; border-radius: 8px; text-align: center; margin: 1rem 0; }
+        [data-theme="dark"] .error-msg { background: #3b1a1a; color: #ff8a8a; }
+        [data-theme="dark"] .success-msg { background: #1b4332; color: #74c69d; }
+        
+        footer { background: var(--secondary); color: rgba(255,255,255,0.8); text-align: center; padding: 2rem 1rem; margin-top: 2rem; }
+        footer a { color: var(--primary); text-decoration: none; }
+        
+        .btn-refresh { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 1rem 0; transition: 0.3s; }
+        .btn-refresh:hover { background: #a01830; }
+        .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        /* Settings Modal */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
+        .modal-content { background: var(--light); margin: 10% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        [data-theme="dark"] .modal-content { background: var(--dark); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h2 { color: var(--text); }
+        .close { font-size: 1.5rem; cursor: pointer; color: var(--text-light); }
+        .close:hover { color: var(--primary); }        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text); font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 2px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 1rem; background: var(--light); color: var(--text); }
+        [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select { background: var(--secondary); border-color: rgba(255,255,255,0.1); }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+        .form-group small { display: block; margin-top: 0.3rem; color: var(--text-light); font-size: 0.85rem; }
+        
+        .btn-save { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem; }
+        .btn-save:hover { background: #a01830; }
+        
+        .api-status { padding: 10px; border-radius: 8px; margin-top: 1rem; font-size: 0.9rem; }
+        .api-status.configured { background: #e8f5e9; color: #2e7d32; border: 1px solid #4caf50; }
+        .api-status.not-configured { background: #fff3e0; color: #e65100; border: 1px solid #ff9800; }
+        
+        .hidden { display: none !important; }
+        
+        @media (max-width: 768px) {
+            .header-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .search-box { width: 100%; }
+            .search-box input { width: 100%; }
+            .news-grid { grid-template-columns: 1fr; }
+            .nav-container { justify-content: flex-start; }
+            .section-title { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .section-title .copy-all { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <a href="#" class="logo">आज की <span>न्यूज़</span> 🗞️</a>
+            <div class="header-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="न्यूज़ सर्च करें...">
+                    <button onclick="searchNews()">🔍</button>
+                </div>
+                <button class="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
+                <button class="theme-toggle" onclick="toggleTheme()" title="थीम बदलें">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="breaking-news">
+        <div class="ticker-wrap" id="breakingTicker">
+            <span class="ticker-item">🔴 ब्रेकिंग: नई न्यूज़ लोड हो रही है...</span>
+        </div>
+    </div>
+    <nav>
+        <div class="nav-container">
+            <button class="nav-btn active" onclick="loadNews('in', event)">🇮🇳 भारत</button>
+            <button class="nav-btn" onclick="loadNews('world', event)">🌍 वर्ल्ड</button>
+            <button class="nav-btn" onclick="loadNews('technology', event)">💻 टेक</button>
+            <button class="nav-btn" onclick="loadNews('sports', event)">⚽ स्पोर्ट्स</button>
+            <button class="nav-btn" onclick="loadNews('business', event)">💼 बिज़नेस</button>
+            <button class="nav-btn" onclick="loadNews('script', event)">📝 स्क्रिप्ट</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <button class="btn-refresh" id="refreshBtn" onclick="refreshNews()">
+            🔄 न्यूज़ रिफ्रेश करें
+        </button>
+        
+        <div id="apiStatusMsg"></div>
+        
+        <h2 class="section-title" id="sectionTitle">
+            <span>🇮🇳 भारत की ताज़ा खबरें</span>
+            <button class="copy-all hidden" id="copyAllBtn" onclick="copyAllScripts()">📋 सभी कॉपी करें</button>
+        </h2>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>न्यूज़ लोड हो रही है...</p>
+        </div>
+        
+        <div id="errorMsg" class="error-msg hidden"></div>
+        
+        <!-- Regular News Grid -->
+        <div class="news-grid" id="newsGrid"></div>
+        
+        <!-- Script Format Container (for Script Category) -->
+        <div class="script-container hidden" id="scriptContainer"></div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ API Settings</h2>
+                <span class="close" onclick="closeSettings()">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label>News API चुनें:</label>
+                <select id="apiProvider" onchange="updateAPIInfo()">
+                    <option value="gnews">GNews API (Recommended)</option>
+                    <option value="currents">Currents API</option>                    <option value="newsapi">NewsAPI.org</option>
+                    <option value="thenewsapi">TheNewsAPI (Free)</option>
+                </select>
+                <small>Multiple free APIs available</small>
+            </div>
+            
+            <div class="form-group">
+                <label>API Key:</label>
+                <input type="text" id="apiKeyInput" placeholder="अपना API Key यहाँ डालें">
+                <small id="apiInfo">GNews: https://gnews.io - 100 free requests/day</small>
+            </div>
+            
+            <div id="currentStatus" class="api-status not-configured">
+                ⚠️ API Key सेट नहीं है - Demo mode में चल रहा है
+            </div>
+            
+            <button class="btn-save" onclick="saveSettings()">💾 Settings सेव करें</button>
+            
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 0.5rem; font-size: 1rem;">📚 Free API Keys कहाँ से लें:</h3>
+                <ul style="font-size: 0.85rem; color: var(--text-light); padding-left: 1.2rem;">
+                    <li>GNews: <a href="https://gnews.io" target="_blank" style="color: var(--primary)">gnews.io</a> - 100 req/day</li>
+                    <li>Currents: <a href="https://currentsapi.services" target="_blank" style="color: var(--primary)">currentsapi.services</a> - 1000 req/day</li>
+                    <li>NewsAPI: <a href="https://newsapi.org" target="_blank" style="color: var(--primary)">newsapi.org</a> - Free dev tier</li>
+                    <li>TheNewsAPI: <a href="https://thenewsapi.com" target="_blank" style="color: var(--primary)">thenewsapi.com</a> - Completely free</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 आज की न्यूज़ | ऑटोमैटिक न्यूज़ पोर्टल</p>
+        <p style="margin-top: 10px; font-size: 0.85rem;">
+            ✅ न्यूज़ हर <strong>5 मिनट</strong> में ऑटो-अपडेट | 
+            📝 स्क्रिप्ट फॉर्मेट में कॉपी करने की सुविधा
+        </p>
+        <p style="margin-top: 10px; font-size: 0.8rem; color: var(--text-light);">
+            ⚙️ ऊपर ⚙️ बटन दबाकर अपनी API Key सेव करें
+        </p>
+    </footer>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            APIs: {
+                gnews: { name: 'GNews API', baseUrl: 'https://gnews.io/api/v4', keyParam: 'token', freeLimit: '100 requests/day', signupUrl: 'https://gnews.io' },
+                currents: { name: 'Currents API', baseUrl: 'https://api.currentsapi.services/v1', keyParam: 'apiKey', freeLimit: '1000 requests/day', signupUrl: 'https://currentsapi.services' },
+                newsapi: { name: 'NewsAPI.org', baseUrl: 'https://newsapi.org/v2', keyParam: 'apiKey', freeLimit: '100 requests/day', signupUrl: 'https://newsapi.org' },
+                thenewsapi: { name: 'TheNewsAPI', baseUrl: 'https://thenewsapi.p.rapidapi.com/news', keyParam: 'api_token', freeLimit: 'Free', signupUrl: 'https://thenewsapi.com' }
+            },            AUTO_UPDATE_INTERVAL: 5 * 60 * 1000,
+            CATEGORIES: { 'in': '🇮 भारत', 'world': '🌍 वर्ल्ड', 'technology': '💻 टेक', 'sports': '⚽ स्पोर्ट्स', 'business': '💼 बिज़नेस', 'script': '📝 स्क्रिप्ट', 'health': '🏥 हेल्थ' }
+        };
+
+        let currentCategory = 'in';
+        let autoUpdateTimer = null;
+        let currentScriptData = [];
+
+        // Load saved settings
+        function loadSettings() {
+            const savedApi = localStorage.getItem('newsApiProvider') || 'gnews';
+            const savedKey = localStorage.getItem('newsApiKey') || '';
+            document.getElementById('apiProvider').value = savedApi;
+            document.getElementById('apiKeyInput').value = savedKey;
+            updateAPIInfo();
+            updateApiStatus();
+        }
+
+        function updateAPIInfo() {
+            const provider = document.getElementById('apiProvider').value;
+            const infoMap = {
+                gnews: 'GNews: https://gnews.io - 100 free requests/day',
+                currents: 'Currents: https://currentsapi.services - 1000 free requests/day',
+                newsapi: 'NewsAPI: https://newsapi.org - Free for development',
+                thenewsapi: 'TheNewsAPI: https://thenewsapi.com - Completely free'
+            };
+            document.getElementById('apiInfo').textContent = infoMap[provider];
+        }
+
+        function updateApiStatus() {
+            const apiKey = localStorage.getItem('newsApiKey');
+            const statusEl = document.getElementById('currentStatus');
+            const statusMsgEl = document.getElementById('apiStatusMsg');
+            
+            if (apiKey && apiKey.length > 10) {
+                const provider = localStorage.getItem('newsApiProvider') || 'gnews';
+                const apiName = CONFIG.APIs[provider].name;
+                statusEl.className = 'api-status configured';
+                statusEl.innerHTML = `✅ ${apiName} configured - API Key सेव है`;
+                if (statusMsgEl) statusMsgEl.innerHTML = `<div class="success-msg">✅ ${apiName} सेट है - न्यूज़ लोड हो रही है</div>`;
+            } else {
+                statusEl.className = 'api-status not-configured';
+                statusEl.innerHTML = '⚠️ API Key सेट नहीं है - Demo mode (सीमित न्यूज़)';
+                if (statusMsgEl) statusMsgEl.innerHTML = `<div class="error-msg">⚠️ <strong>API Key जोड़ें:</strong> ऊपर ⚙️ Settings बटन दबाएं और अपनी free API key सेव करें।</div>`;
+            }
+        }
+
+        function saveSettings() {
+            const provider = document.getElementById('apiProvider').value;
+            const apiKey = document.getElementById('apiKeyInput').value.trim();            localStorage.setItem('newsApiProvider', provider);
+            localStorage.setItem('newsApiKey', apiKey);
+            updateApiStatus();
+            alert('✅ Settings सेव हो गईं! पेज रिफ्रेश हो रहा है...');
+            closeSettings();
+            setTimeout(() => location.reload(), 500);
+        }
+
+        function openSettings() { document.getElementById('settingsModal').style.display = 'block'; updateApiStatus(); }
+        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                btn.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                btn.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return 'अज्ञात';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 60000);
+            if (diff < 1) return 'अभी';
+            if (diff < 60) return `${diff} मिनट पहले`;
+            if (diff < 1440) return `${Math.floor(diff/60)} घंटे पहले`;
+            return date.toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
+        }
+
+        function truncateText(text, maxLength = 120) {
+            if (!text) return 'कोई विवरण उपलब्ध नहीं';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('hidden', !show);
+            document.getElementById('newsGrid').classList.toggle('hidden', show);
+            document.getElementById('scriptContainer').classList.toggle('hidden', show);        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMsg');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            setTimeout(() => errorEl.classList.add('hidden'), 8000);
+        }
+
+        // ===== SCRIPT FORMAT GENERATOR (Your Demo Style) =====
+        function generateScriptFormat(articles) {
+            const today = new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+            let scriptText = `📰 आज ${today} की टॉप 5 खबरें:\n\n`;
+            
+            articles.slice(0, 5).forEach((article, index) => {
+                // Clean and format the content to 3-5 lines
+                let content = article.description || article.content || '';
+                content = content.replace(/\n+/g, ' ').trim();
+                
+                // Split into sentences and take first 4-5 for 3-5 lines
+                const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+                let shortContent = sentences.slice(0, 4).join('. ') + '.';
+                
+                // Format: 1. **Headline**\n\n   Content lines\n
+                scriptText += `${index + 1}. **${article.title}**\n\n`;
+                scriptText += `   ${shortContent}\n\n`;
+            });
+            
+            scriptText += `---\n🗞️ स्रोत: आज की न्यूज़ | ${new Date().toLocaleTimeString('hi-IN')}`;
+            return scriptText;
+        }
+
+        function renderScriptFormat(articles) {
+            const container = document.getElementById('scriptContainer');
+            const copyAllBtn = document.getElementById('copyAllBtn');
+            container.innerHTML = '';
+            copyAllBtn.classList.remove('hidden');
+            
+            if (!articles || articles.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-light)">कोई न्यूज़ नहीं मिली।</p>';
+                copyAllBtn.classList.add('hidden');
+                return;
+            }
+
+            currentScriptData = articles.slice(0, 5);
+            const today = new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            currentScriptData.forEach((article, index) => {
+                let content = article.description || article.content || '';
+                content = content.replace(/\n+/g, ' ').trim();                const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+                let shortContent = sentences.slice(0, 4).join('. ') + '.';
+                
+                const item = document.createElement('div');
+                item.className = 'script-item';
+                item.innerHTML = `
+                    <div class="script-number">${index + 1}.</div>
+                    <div class="script-headline">${article.title}</div>
+                    <div class="script-content">${shortContent}</div>
+                    <div class="script-footer">
+                        <span class="script-source">📰 ${article.source?.name || 'समाचार'}</span>
+                        <button class="copy-btn" onclick="copyScriptItem(${index}, this)">📋 कॉपी करें</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Copy single script item
+        async function copyScriptItem(index, btn) {
+            const article = currentScriptData[index];
+            const today = new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            let content = article.description || article.content || '';
+            content = content.replace(/\n+/g, ' ').trim();
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+            let shortContent = sentences.slice(0, 4).join('. ') + '.';
+            
+            const textToCopy = `${index + 1}. **${article.title}**\n\n   ${shortContent}\n\n📰 ${article.source?.name || 'समाचार'} | ${formatTime(article.publishedAt)}`;
+            
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                btn.textContent = '✅ कॉपी हो गया!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 कॉपी करें';
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = textToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                btn.textContent = '✅ कॉपी हो गया!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 कॉपी करें';                    btn.classList.remove('copied');
+                }, 2000);
+            }
+        }
+
+        // Copy all scripts
+        async function copyAllScripts() {
+            const today = new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+            let fullText = `📰 आज ${today} की टॉप 5 खबरें:\n\n`;
+            
+            currentScriptData.forEach((article, index) => {
+                let content = article.description || article.content || '';
+                content = content.replace(/\n+/g, ' ').trim();
+                const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+                let shortContent = sentences.slice(0, 4).join('. ') + '.';
+                
+                fullText += `${index + 1}. **${article.title}**\n\n`;
+                fullText += `   ${shortContent}\n\n`;
+            });
+            
+            fullText += `---\n🗞️ स्रोत: आज की न्यूज़ | ${new Date().toLocaleTimeString('hi-IN')}`;
+            
+            try {
+                await navigator.clipboard.writeText(fullText);
+                const btn = document.getElementById('copyAllBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ सभी कॉपी हो गए!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            } catch (err) {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = fullText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                const btn = document.getElementById('copyAllBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ सभी कॉपी हो गए!';
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            }
+        }
+
+        // Regular news render
+        function renderNews(articles) {
+            const grid = document.getElementById('newsGrid');
+            const copyAllBtn = document.getElementById('copyAllBtn');
+            grid.innerHTML = '';
+            copyAllBtn.classList.add('hidden');
+                        if (!articles || articles.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-light)">कोई न्यूज़ नहीं मिली।</p>';
+                return;
+            }
+
+            articles.forEach((article, index) => {
+                const card = document.createElement('article');
+                card.className = 'news-card';
+                const imageUrl = article.image || article.urlToImage || `https://source.unsplash.com/random/400x300/?news,${index}`;
+                
+                card.innerHTML = `
+                    <div class="news-image">
+                        <img src="${imageUrl}" alt="${article.title}" onerror="this.src='https://source.unsplash.com/random/400x300/?news'">
+                    </div>
+                    <div class="news-content">
+                        <span class="news-category">${article.source?.name || 'न्यूज़'}</span>
+                        <h3 class="news-title"><a href="${article.url}" target="_blank" rel="noopener">${article.title}</a></h3>
+                        <p class="news-desc">${truncateText(article.description || article.content)}</p>
+                        <div class="news-meta">
+                            <span class="news-source">📰 ${article.source?.name || 'समाचार'}</span>
+                            <span class="news-time">🕐 ${formatTime(article.publishedAt)}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateTicker(articles) {
+            const ticker = document.getElementById('breakingTicker');
+            if (articles && articles.length > 0) {
+                const headlines = articles.slice(0, 5).map(art => `🔴 ${art.title}`).join('   |   ');
+                ticker.innerHTML = `<span class="ticker-item">${headlines}</span>`;
+            }
+        }
+
+        async function fetchNewsFromAPI(category, searchQuery = null) {
+            const provider = localStorage.getItem('newsApiProvider') || 'gnews';
+            const apiKey = localStorage.getItem('newsApiKey') || '';
+            const api = CONFIG.APIs[provider];
+            
+            let url;
+            const params = new URLSearchParams();
+            if (apiKey) params.append(api.keyParam, apiKey);
+            
+            const categoryMap = {
+                'in': { q: 'india', lang: 'hi' },
+                'world': { category: 'world' },
+                'technology': { category: 'technology' },
+                'sports': { category: 'sports' },                'business': { category: 'business' },
+                'health': { category: 'health' }
+            };
+            
+            const catParams = categoryMap[category] || {};
+            if (searchQuery) params.append('q', searchQuery);
+            else if (catParams.q) params.append('q', catParams.q);
+            if (catParams.category) params.append('category', catParams.category);
+            params.append('lang', catParams.lang || 'hi');
+            params.append('limit', '12');
+            
+            if (provider === 'gnews') url = `${api.baseUrl}/search?${params.toString()}`;
+            else if (provider === 'currents') url = `${api.baseUrl}/latest-news?${params.toString()}`;
+            else if (provider === 'newsapi') {
+                if (searchQuery || catParams.q) url = `${api.baseUrl}/everything?${params.toString()}`;
+                else {
+                    params.append('country', 'in');
+                    if (catParams.category) params.append('category', catParams.category);
+                    url = `${api.baseUrl}/top-headlines?${params.toString()}`;
+                }
+            } else if (provider === 'thenewsapi') {
+                params.append('locale', 'hi-in');
+                url = `${api.baseUrl}?${params.toString()}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) throw new Error('❌ API Key invalid है।');
+                else if (response.status === 429) throw new Error(`⚠️ API limit पूरी हो गई!`);
+                throw new Error(`Error ${response.status}`);
+            }
+            
+            const data = await response.json();
+            let articles = data.articles || data.news || data.result || [];
+            return articles.filter(art => art.title && (art.image || art.urlToImage));
+        }
+
+        // Demo news for script mode
+        function getDemoScriptNews() {
+            const today = new Date().toLocaleDateString('hi-IN');
+            return [
+                {
+                    title: "भारत निर्वाचन आयोग ने चुनाव प्रक्रिया में पारदर्शिता के लिए जारी किए नए दिशानिर्देश",
+                    description: "आज 24 अप्रैल 2026 की टॉप खबरें इस प्रकार हैं। भारत निर्वाचन आयोग ने आगामी चुनावों को देखते हुए मतदान प्रक्रिया में तकनीकी पारदर्शिता बढ़ाने के लिए नए निर्देश जारी किए हैं। इसके तहत सभी मतदान केंद्रों पर रियल-टाइम बायोमेट्रिक वेरिफिकेशन की व्यवस्था अनिवार्य की जा रही है ताकि फर्जी मतदान को पूरी तरह रोका जा सके। आयोग ने राजनीतिक दलों को सोशल मीडिया विज्ञापनों का पूरा ब्यौरा सार्वजनिक करने का भी आदेश दिया है। इस कदम का उद्देश्य लोकतांत्रिक प्रक्रिया को और अधिक मजबूत और विश्वसनीय बनाना है।",
+                    url: "#", source: { name: "निर्वाचन आयोग" }, publishedAt: new Date().toISOString()
+                },
+                {
+                    title: "केंद्र सरकार ने किसानों के लिए 'कृषि मित्र' डिजिटल योजना का किया शुभारंभ",
+                    description: "अगली बड़ी खबर, केंद्र सरकार ने किसानों की आय बढ़ाने और उन्हें आधुनिक तकनीक से जोड़ने के लिए 'कृषि मित्र' नामक एक व्यापक डिजिटल पोर्टल की शुरुआत की है। पीआईबी द्वारा साझा की गई जानकारी के अनुसार, इस पोर्टल के जरिए किसानों को मौसम की सटीक भविष्यवाणी और मिट्टी की जांच की रिपोर्ट सीधे उनके मोबाइल पर मिलेगी। इस योजना में सरकार ने खाद और बीज पर मिलने वाली सब्सिडी की प्रक्रिया को भी पूरी तरह से पेपरलेस बना दिया है।",
+                    url: "#", source: { name: "PIB" }, publishedAt: new Date().toISOString()                },
+                {
+                    title: "ISRO ने सफलतापूर्वक लॉन्च किया नया कम्युनिकेशन सैटेलाइट",
+                    description: "भारतीय अंतरिक्ष अनुसंधान संगठन (ISRO) ने आज श्रीहरिकोटा से एक नया कम्युनिकेशन सैटेलाइट सफलतापूर्वक लॉन्च किया है। यह सैटेलाइट दूरदराज के इलाकों में हाई-स्पीड इंटरनेट सेवा प्रदान करने में मदद करेगा। लॉन्च के 18 मिनट बाद सैटेलाइट ने अपनी कक्षा में सही ढंग से प्रवेश कर लिया है। इस मिशन से भारत की स्पेस टेक्नोलॉजी में एक और महत्वपूर्ण कदम आगे बढ़ा है।",
+                    url: "#", source: { name: "ISRO" }, publishedAt: new Date().toISOString()
+                },
+                {
+                    title: "नई शिक्षा नीति: स्कूलों में कोडिंग अब कक्षा 6 से होगी अनिवार्य",
+                    description: "केंद्र सरकार की नई शिक्षा नीति के तहत अब देश के सभी स्कूलों में कक्षा 6 से कोडिंग और कंप्यूटर साइंस को अनिवार्य विषय बनाया जाएगा। इसका उद्देश्य बच्चों को डिजिटल युग के लिए तैयार करना है। शिक्षा मंत्रालय ने कहा है कि अगले शैक्षणिक सत्र से पायलट प्रोजेक्ट शुरू किया जाएगा। शिक्षकों के लिए विशेष ट्रेनिंग प्रोग्राम भी चलाए जाएंगे।",
+                    url: "#", source: { name: "शिक्षा मंत्रालय" }, publishedAt: new Date().toISOString()
+                },
+                {
+                    title: "भारत-जापान के बीच रणनीतिक साझेदारी को मिला नया आयाम",
+                    description: "प्रधानमंत्री और जापान के प्रधानमंत्री के बीच हुई वार्ता में दोनों देशों ने रक्षा, तकनीक और हरित ऊर्जा के क्षेत्र में सहयोग बढ़ाने पर सहमति जताई है। इस समझौते के तहत जापान भारत में सेमीकंडंडर मैन्युफैक्चरिंग में निवेश करेगा। दोनों नेताओं ने स्टार्टअप्स और इनोवेशन को प्रोत्साहन देने के लिए संयुक्त फंड बनाने की भी घोषणा की।",
+                    url: "#", source: { name: "MEA" }, publishedAt: new Date().toISOString()
+                }
+            ];
+        }
+
+        async function loadNews(category, event = null) {
+            if (event) {
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+            }
+            currentCategory = category;
+            
+            const titleMap = {
+                'in': '🇮🇳 भारत की ताज़ा खबरें',
+                'world': '🌍 अंतरराष्ट्रीय समाचार',
+                'technology': '💻 टेक्नोलॉजी न्यूज़',
+                'sports': '⚽ स्पोर्ट्स अपडेट्स',
+                'business': '💼 बिज़नेस & फाइनेंस',
+                'script': '📝 टॉप 5 स्क्रिप्ट (कॉपी करने योग्य)',
+                'health': '🏥 हेल्थ & लाइफस्टाइल'
+            };
+            document.getElementById('sectionTitle').querySelector('span').textContent = titleMap[category] || 'ताज़ा खबरें';
+            
+            showLoading(true);
+            document.getElementById('errorMsg').classList.add('hidden');
+            document.getElementById('refreshBtn').disabled = true;
+
+            // Toggle views based on category
+            const isScript = category === 'script';
+            document.getElementById('newsGrid').classList.toggle('hidden', isScript);
+            document.getElementById('scriptContainer').classList.toggle('hidden', !isScript);
+            document.getElementById('copyAllBtn').classList.toggle('hidden', !isScript);
+
+            try {
+                const apiKey = localStorage.getItem('newsApiKey');
+                let articles;                
+                if (!apiKey || apiKey.length < 10) {
+                    console.log('Running in demo mode');
+                    if (isScript) {
+                        articles = getDemoScriptNews();
+                        renderScriptFormat(articles);
+                    } else {
+                        articles = getDemoScriptNews().slice(0, 6);
+                        renderNews(articles);
+                    }
+                    if (!apiKey) showError('⚠️ Demo Mode: असली न्यूज़ के लिए ⚙️ Settings में API Key सेव करें।');
+                } else {
+                    articles = await fetchNewsFromAPI(category);
+                    if (isScript) renderScriptFormat(articles);
+                    else renderNews(articles);
+                }
+                updateTicker(articles);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message || 'न्यूज़ लोड करने में त्रुटि।');
+                if (currentCategory === 'script') {
+                    renderScriptFormat(getDemoScriptNews());
+                } else {
+                    renderNews(getDemoScriptNews().slice(0, 6));
+                }
+            } finally {
+                showLoading(false);
+                document.getElementById('refreshBtn').disabled = false;
+            }
+        }
+
+        function searchNews() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query.length < 3) { showError('कृपया कम से कम 3 अक्षर लिखें'); return; }
+            document.getElementById('sectionTitle').querySelector('span').textContent = `🔍 "${query}" के परिणाम`;
+            loadNews(currentCategory);
+        }
+
+        function refreshNews() { loadNews(currentCategory); }
+
+        function startAutoUpdate() {
+            if (autoUpdateTimer) clearInterval(autoUpdateTimer);
+            autoUpdateTimer = setInterval(() => {
+                console.log('🔄 Auto-updating news...');
+                loadNews(currentCategory);
+            }, CONFIG.AUTO_UPDATE_INTERVAL);
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');            if (event.target === modal) closeSettings();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadNews('in');
+            startAutoUpdate();
+            document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') searchNews(); });
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { if (autoUpdateTimer) clearInterval(autoUpdateTimer); }
+            else { startAutoUpdate(); }
+        });
+    </script>
+</body>
+</html>
